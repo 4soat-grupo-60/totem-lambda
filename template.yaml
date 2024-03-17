@@ -1,24 +1,11 @@
-# This is the SAM template that represents the architecture of your serverless application
-# https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-template-basics.html
-
-# The AWSTemplateFormatVersion identifies the capabilities of the template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/format-version-structure.html
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
   totem-lambda
 
-# Transform section specifies one or more macros that AWS CloudFormation uses to process your template
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-section-structure.html
 Transform:
   - AWS::Serverless-2016-10-31
 
-# Resources declares the AWS resources that you want to include in the stack
-# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/resources-section-structure.html
 Resources:
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: get-all-items.js
   LoginFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -33,6 +20,7 @@ Resources:
         Variables:
           COGNITO_REGION: "us-east-1"
           COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPool
       Events:
         Api:
           Type: Api
@@ -40,10 +28,6 @@ Resources:
             Path: /login
             Method: POST
 
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-
-  # This is a Lambda function config associated with the source code: get-by-id.js
   RegisterFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -58,40 +42,92 @@ Resources:
         Variables:
           COGNITO_REGION: "us-east-1"
           COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPool
       Policies:
-        - CognitoCrudPolicy:
-            UserPoolId: !Ref CognitoUserPool
+        ManagedPolicyArns:
+          - !Ref CognitoUserPoolClientAdminPolicy
       Events:
         Api:
           Type: Api
           Properties:
             Path: /register
             Method: POST
-  # Each Lambda function is defined by properties:
-  # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: MyUserPool
-      UsernameAttributes:
-        - email
-        - name
+      UserPoolName: sam-tech-challenge
       AutoVerifiedAttributes:
-        - email
+        - "email"
+      MfaConfiguration: "OFF"
+      UsernameConfiguration:
+        CaseSensitive: false
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          RequireUppercase: false
+          TemporaryPasswordValidityDays: 365
       Schema:
-        - Name: custom:CPF
+        - Name: email
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: true
+        - Name: CPF
           AttributeDataType: String
           Mutable: true
           Required: false
+          StringAttributeConstraints:
+            MinLength: "11"
+            MaxLength: "11"
 
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: MyUserPoolClient
+      ClientName: sam-tech-challenge-client
       UserPoolId: !Ref CognitoUserPool
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+        - ALLOW_CUSTOM_AUTH
+
+  CognitoUserPoolClientAdminPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "cognito-idp:AdminConfirmSignUp"
+            Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
 
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  LoginFunction:
+    Description: "Login Function ARN"
+    Value: !GetAtt LoginFunction.Arn
+  LoginFunctionIamRole:
+    Description: "Implicit IAM Role created for Login function"
+    Value: !GetAtt LoginFunctionRole.Arn
+  RegisterFunction:
+    Description: "Register Function ARN"
+    Value: !GetAtt RegisterFunction.Arn
+  RegisterFunctionIamRole:
+    Description: "Implicit IAM Role created for Register function"
+    Value: !GetAtt RegisterFunctionRole.Arn
+  CognitoUserPoolId:
+    Description: "Cognito User Pool Id"
+    Value: !Ref CognitoUserPool
+  CognitoUserPoolClientId:
+    Description: "Cognito User Pool Client Id"
+    Value: !Ref CognitoUserPoolClient

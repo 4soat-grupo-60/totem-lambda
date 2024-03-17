@@ -1,6 +1,7 @@
 import {
   CognitoIdentityProviderClient,
   SignUpCommand,
+  AdminConfirmSignUpCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 
 const client = new CognitoIdentityProviderClient({
@@ -27,22 +28,33 @@ export const registerHandler = async (event) => {
         { Name: "name", Value: String(name) },
         { Name: "custom:CPF", Value: String(cpfFormatted) },
       ],
+      ForceAliasCreation: true,
     };
 
     const command = new SignUpCommand(params);
     const result = await client.send(command);
 
+    const commandConfirm = new AdminConfirmSignUpCommand({
+      UserPoolId: process.env.COGNITO_USER_POOL_ID,
+      Username: cpfFormatted,
+    });
+
+    await client.send(commandConfirm);
+
     return {
       statusCode: 200,
       body: JSON.stringify({
-        client_id: result.ChallengeParameters.USER_ID_FOR_SRP,
-        session: result.Session,
+        message: "Cliente cadastrado com sucesso!",
+        result,
       }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Erro ao registrar usuário:", error }),
+      body: JSON.stringify({
+        message: "Erro ao cadastrar cliente:",
+        error: error,
+      }),
     };
   }
 };
