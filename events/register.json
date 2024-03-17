@@ -1,0 +1,5 @@
+{
+  "httpMethod": "POST",
+  "contentType": "application/json",
+  "body": "{\"name\": \"name1\",\"cpf\": \"cpf1\", \"email\": \"email1\"}"
+}
