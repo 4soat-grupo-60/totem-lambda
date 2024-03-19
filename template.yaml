@@ -44,8 +44,7 @@ Resources:
           COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
           COGNITO_USER_POOL_ID: !Ref CognitoUserPool
       Policies:
-        ManagedPolicyArns:
-          - !Ref CognitoUserPoolClientAdminPolicy
+        - !Ref CognitoUserPoolClientAdminPolicy
       Events:
         Api:
           Type: Api
@@ -106,7 +105,7 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - "cognito-idp:AdminConfirmSignUp"
+              - "cognito-idp:*"
             Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
 
 Outputs:
@@ -131,3 +130,6 @@ Outputs:
   CognitoUserPoolClientId:
     Description: "Cognito User Pool Client Id"
     Value: !Ref CognitoUserPoolClient
+  CognitoUserPoolClientAdminPolicy:
+    Description: "Cognito User Pool Client Admin Policy"
+    Value: !Ref CognitoUserPoolClientAdminPolicy

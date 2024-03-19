@@ -18,11 +18,8 @@ export const loginHandler = async (event) => {
     const { cpf } = JSON.parse(event.body);
     const cpfFormatted = cpf.replaceAll(".", "").replace("-", "");
 
-    if (cpfFormatted.length !== 11 || !cpfFormatted)
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "CPF inválido ou não informado" }),
-      };
+    if (cpfFormatted.length !== 11 || !cpf)
+      throw new Error("CPF inválido ou não informado");
 
     const command = new InitiateAuthCommand({
       AuthFlow: "USER_PASSWORD_AUTH",
@@ -39,14 +36,16 @@ export const loginHandler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({
         message: "Cliente autenticado com sucesso!",
-        client_id: result.ChallengeParameters.USER_ID_FOR_SRP,
-        session: result.Session,
+        accessToken: result?.AuthenticationResult?.AccessToken,
       }),
     };
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Erro ao autenticar cliente:", error }),
+      body: JSON.stringify({
+        message: "Erro ao autenticar cliente:",
+        error: error,
+      }),
     };
   }
 };
