@@ -42,7 +42,7 @@ export const registerHandler = async (event) => {
     await client.send(commandConfirm);
 
     return {
-      statusCode: 200,
+      statusCode: 201,
       body: JSON.stringify({
         message: "Cliente cadastrado com sucesso!",
         result,

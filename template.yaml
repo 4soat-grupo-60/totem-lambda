@@ -52,6 +52,33 @@ Resources:
             Path: /register
             Method: POST
 
+  RemoveFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/remove.removeHandler
+      Runtime: nodejs18.x
+      Architectures:
+        - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: Remove handler function to Cognito
+      Environment:
+        Variables:
+          COGNITO_REGION: "us-east-1"
+          COGNITO_CLIENT_ID: !Ref CognitoUserPoolClient
+          COGNITO_USER_POOL_ID: !Ref CognitoUserPool
+          SQS_REGION: "us-east-1"
+          SQS_QUEUE_URL: "customer-queue"
+      Policies:
+        - !Ref CognitoUserPoolClientAdminPolicy
+        - !Ref SqsAdminPolicy
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /remove
+            Method: DELETE
+
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
@@ -108,6 +135,17 @@ Resources:
               - "cognito-idp:*"
             Resource: !Sub "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPool}"
 
+  SqsAdminPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "sqs:*"
+            Resource: "*"
+
 Outputs:
   WebEndpoint:
     Description: "API Gateway endpoint URL for Prod stage"
@@ -124,6 +162,12 @@ Outputs:
   RegisterFunctionIamRole:
     Description: "Implicit IAM Role created for Register function"
     Value: !GetAtt RegisterFunctionRole.Arn
+  RemoveFunction:
+    Description: "Remove Function ARN"
+    Value: !GetAtt RemoveFunction.Arn
+  removeFunctionIamRole:
+    Description: "Implicit IAM Role created for Remove function"
+    Value: !GetAtt RemoveFunctionRole.Arn
   CognitoUserPoolId:
     Description: "Cognito User Pool Id"
     Value: !Ref CognitoUserPool
@@ -133,3 +177,6 @@ Outputs:
   CognitoUserPoolClientAdminPolicy:
     Description: "Cognito User Pool Client Admin Policy"
     Value: !Ref CognitoUserPoolClientAdminPolicy
+  SqsAdminPolicy:
+    Description: "SQS Admin Policy"
+    Value: !Ref SqsAdminPolicy
