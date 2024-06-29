@@ -64,22 +64,13 @@ export const removeHandler = async (event) => {
 
     const sqsCommand = new SendMessageCommand({
       QueueUrl: process.env.SQS_QUEUE_URL,
-      MessageAttributes: {
-        id: {
-          DataType: "String",
-          StringValue: crypto.randomBytes(16).toString("hex"),
-        },
-        saga: {
-          DataType: "String",
-          StringValue: "customer_deleted",
-        },
-        time: {
-          DataType: "String",
-          StringValue: new Date().toISOString(),
-        },
-      },
       MessageBody: JSON.stringify({
-        cpf: userResult.Username,
+        id: crypto.randomBytes(16).toString("hex"),
+        saga: "customer_deleted",
+        time: new Date().toISOString(),
+        payload: {
+          cpf: userResult.Username,
+        },
       }),
     });
 
